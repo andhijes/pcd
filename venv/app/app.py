@@ -38,7 +38,7 @@ def substract(img, subtractor):
     return canvas
 
 
-UPLOAD_FOLDER = 'C:/laragon/www/pcd/venv/app/templates/temp'
+UPLOAD_FOLDER = 'images'
 ALLOWED_EXTENSIONS = set([ 'png', 'jpg', 'jpeg'])
 
 app = Flask(__name__)
@@ -65,14 +65,18 @@ def upload_file():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            lokasi_file = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(lokasi_file)
             # utama(filename)
 
             count = 1
             data = []
-
-
-            hsv = cv2.cvtColor(filename, cv2.COLOR_RGB2HSV)
+            
+            img = cv2.imread(lokasi_file)
+            fix = tuple((300,300))
+            img = cv2.resize(img, fix)
+            
+            hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             gray = cv2.cvtColor(hsv, cv2.COLOR_RGB2GRAY)
 
             ret,biner_threshold = cv2.threshold(gray, 80, 255,cv2.THRESH_BINARY )
@@ -85,7 +89,7 @@ def upload_file():
             # cv2.imshow('gray1', gray)
 
             biner_threshold = cv2.bitwise_not(erotion3)
-            final = substract(filename, biner_threshold)
+            final = substract(img, biner_threshold)
             final1 = cv2.cvtColor(final, cv2.COLOR_BGR2GRAY)
 
             hitam = 0
