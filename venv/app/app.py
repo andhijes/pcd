@@ -73,8 +73,8 @@ def upload_file():
             data = []
             
             img = cv2.imread(lokasi_file)
-            fix = tuple((300,300))
-            img = cv2.resize(img, fix)
+            # fix = tuple((300,300))
+            # img = cv2.resize(img, fix)
             
             hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             gray = cv2.cvtColor(hsv, cv2.COLOR_RGB2GRAY)
@@ -214,7 +214,7 @@ def upload_file():
 
             """## Buat ngetest regresi"""
             #misal input
-            luas = 0.1
+            luas = berat
             #model
             berat = -54.6064 + 3184.4924*luas
             #hasil berat
