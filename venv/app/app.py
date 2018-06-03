@@ -9,6 +9,7 @@ import csv
 
 # from pcd import *
 
+
 def grayscale(source):
     row, col, ch = source.shape
     graykanvas = np.zeros((row, col, 1), np.uint8)
@@ -49,9 +50,8 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-@app.route('/', methods=['GET', 'POST'])
-def upload_file():
+@app.route('/kematangan',  methods=['GET', 'POST'])
+def utama():
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -69,6 +69,7 @@ def upload_file():
             file.save(lokasi_file)
             # utama(filename)
 
+            filenamee = filename
             count = 1
             data = []
             
@@ -143,7 +144,7 @@ def upload_file():
             link=UPLOAD_FOLDER+filename
             # return render_template('index.html')
             # return render_template('index.html',filename=filename,value=r_final,value2=g_final,value3=b_final,value4=hijau_final,value5=hitam_final, value6=berat, file_url=link)
-#    r_final, g_final, b_final, hijau_final, hitam_final, berat
+            #    r_final, g_final, b_final, hijau_final, hitam_final, berat
             import pandas as pd
             mangga = pd.read_csv('mangga.csv', delimiter=';')
 
@@ -207,9 +208,13 @@ def upload_file():
             testbaris = scaler.transform(testbaris)
             #diprediksi
             predictions = mlp.predict(testbaris)
-            # print("hasil kelas: ")
-            #hasil prediksi
-            # print(predictions)
+            
+            if predictions == '[1]':
+                matang = 'Kurang Matang'
+            if predictions == '[2]':
+                matang = 'Matang'
+            else :
+                matang = 'Sangat Matang'
 
 
             """## Buat ngetest regresi"""
@@ -217,17 +222,23 @@ def upload_file():
             luas = berat
             #model
             berat = -54.6064 + 3184.4924*luas
-            #hasil berat
-            # print('hasil berat: ' )
-            # print(berat)
-            return render_template('index.html',filename=filename,value=predictions,value1=berat, file_url=link)
-            
+            #truncate floating
+            berat = '%.3f'%(berat)             
+            return render_template('hasil.html',filename=filenamee,tingkat_matang=matang,berat=berat, file_url=link)
+    
+    return render_template('kematangan.html')
+
+
+
+
+@app.route('/images/<filename>', methods=['GET'])
+def show_file(filename):
+    return send_from_directory('images/', filename, as_attachment=True)
+
+@app.route('/')
+def index():   
     return render_template('index.html',)
 
-
-# @app.route('/ambil/<filename>', methods=['GET', 'POST'])
-# def show_file(filename):
-#     return send_from_directory('temp/', filename,as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
