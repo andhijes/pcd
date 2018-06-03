@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
-import csv
 import glob
+import csv
+import os
 from app import *
 
 def grayscale(source):
@@ -32,19 +33,16 @@ def substract(img, subtractor):
                 canvas.itemset((i, j, 2), r)
     return canvas
 
-#read all the images
-images = [cv2.imread(file) for file in glob.glob("PCD/*.jpg")]
-# img = cv2.imread("mangga.jpg")
 
-#inisialisasi untuk ke csv
-count = 1
-data = []
+def utama(filename):
+    # img = cv2.imread("mangga.jpg")
+    fix = tuple((300,300))
+    img = cv2.resize(filename, fix)
+    count = 1
+    data = []
 
-for img in images:
-    #buat threshold untuk segmentasi
-    print("img\n", count);
 
-    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    hsv = cv2.cvtColor(filename, cv2.COLOR_RGB2HSV)
     gray = cv2.cvtColor(hsv, cv2.COLOR_RGB2GRAY)
 
     ret,biner_threshold = cv2.threshold(gray, 80, 255,cv2.THRESH_BINARY )
@@ -57,7 +55,7 @@ for img in images:
     # cv2.imshow('gray1', gray)
 
     biner_threshold = cv2.bitwise_not(erotion3)
-    final = substract(img, biner_threshold)
+    final = substract(filename, biner_threshold)
     final1 = cv2.cvtColor(final, cv2.COLOR_BGR2GRAY)
 
     hitam = 0
@@ -65,6 +63,11 @@ for img in images:
     berat = 0
     full  = 0
 
+    red = 0
+    blue = 0
+    green = 0
+
+    r_size = 0
     b_size = 0
     g_size = 0
 
@@ -73,7 +76,7 @@ for img in images:
     for i in range(0, row):
         for j in range(0, col):
             val = final1[i,j]
-            #b, g, r = final[i,j]
+            b, g, r = final[i,j]
             #print(b,g,r)
 
             #if(g!=0 and r!=0):
@@ -82,18 +85,29 @@ for img in images:
                 if(val>15 and val < 65): hijau=hijau+1
                 else: hitam = hitam+1
 
-    g_final = float(hijau)/(hitam+hijau)
-    b_final = float(hitam)/(hitam+hijau)
+            red = red + r
+            green = green + g
+            blue = blue + b
+
+            if(r): r_size = r_size + 1
+            if(g): g_size = g_size + 1
+            if(b): b_size = b_size + 1
+
+    hijau_final = float(hijau)/(hitam+hijau)
+    hitam_final = float(hitam)/(hitam+hijau)
+    r_final = float(red)/r_size
+    g_final = float(green)/g_size
+    b_final = float(blue)/b_size
+
 
     berat = hitam+hijau
     full = row*col
     berat = float(berat)/full
 
-    data.append([count, g_final, b_final, berat])
-    count = count+1
-    # cv2.waitKey(0)
+    return r_final, g_final, b_final, hijau_final, hitam_final, berat
+    #data.append([r_final, g_final, b_final, hijau_final, hitam_final, berat])
 
-myFile = open('lagi4.csv','w')
-with myFile:
-	writer = csv.writer(myFile)
-	writer.writerows(data)
+    #myFile = open('lagi4.csv','w')
+    #with myFile:
+    #	writer = csv.writer(myFile)
+    #	writer.writerows(data)
