@@ -209,12 +209,14 @@ def utama():
             testbaris = scaler.transform(testbaris)
             #diprediksi
             predictions = mlp.predict(testbaris)       
-            
-            if predictions == '[1]':
+
+            print(predictions)
+            matang = predictions 
+            if matang == [1]:
                 matang = 'Kurang Matang'
-            if predictions == '[2]':
+            if matang == [2]:
                 matang = 'Matang'
-            else :
+            if matang == [3]:
                 matang = 'Sangat Matang'
 
 
