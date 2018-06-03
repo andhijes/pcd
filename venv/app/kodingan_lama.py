@@ -145,8 +145,6 @@ def utama():
             # return render_template('index.html')
             # return render_template('index.html',filename=filename,value=r_final,value2=g_final,value3=b_final,value4=hijau_final,value5=hitam_final, value6=berat, file_url=link)
             #    r_final, g_final, b_final, hijau_final, hitam_final, berat
-           
-            #kodingan sisdas
             import pandas as pd
             mangga = pd.read_csv('mangga.csv', delimiter=';')
 
@@ -189,8 +187,8 @@ def utama():
             """## Save Model"""
             import pickle
             # save the model to disk
-            # filename = 'finalized_model.sav'
-            # pickle.dump(mlp, open(filename, 'wb'))
+            filename = 'finalized_model.sav'
+            pickle.dump(mlp, open(filename, 'wb'))
 
 
             """## Prediction"""
@@ -199,16 +197,17 @@ def utama():
             #print(confusion_matrix(y_test,predictions))
             #print(classification_report(y_test,predictions))
 
+
             """## Buat ngetest klasifikasi"""
             #load model yang udah di save
             mlp = pickle.load(open('finalized_model.sav', 'rb'))
             #misal barisnya [[r_avg, g_avg, b_avg, hijau, hitam]]
-            #testbaris = [[45.42237509758,46.6865241998439,13.7977100274688,0.966212919594067,0.0337870804059329]]
+            # testbaris = [[45.42237509758,46.6865241998439,13.7977100274688,0.966212919594067,0.0337870804059329]]
             testbaris = [[r_final, g_final, b_final, hijau_final, hitam_final]]
             #di praproses
             testbaris = scaler.transform(testbaris)
             #diprediksi
-            predictions = mlp.predict(testbaris)       
+            predictions = mlp.predict(testbaris)
             
             if predictions == '[1]':
                 matang = 'Kurang Matang'
