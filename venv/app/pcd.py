@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import csv
 import glob
+import os
+import sklearn
 
 #fungsi grayscale
 def grayscale(source):
@@ -33,87 +35,84 @@ def substract(img, subtractor):
                 canvas.itemset((i, j, 2), r)
     return canvas
 
-#read all the images
-#images = [cv2.imread(file) for file in glob.glob("PCD/*.jpg")]
-img = cv2.imread("mangga.jpg")
+def imageProcess(lokasi_file):
+    count = 1
+    data = []
 
-count = 1
-data = []
+    img = cv2.imread(lokasi_file)
+    fix = tuple((300,300))
+    img = cv2.resize(img, fix)
 
-#buat mask
-hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-gray = cv2.cvtColor(hsv, cv2.COLOR_RGB2GRAY)
+    #buat mask
+    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    gray = cv2.cvtColor(hsv, cv2.COLOR_RGB2GRAY)
 
-ret,biner_threshold = cv2.threshold(gray, 80, 255,cv2.THRESH_BINARY )
+    ret,biner_threshold = cv2.threshold(gray, 80, 255,cv2.THRESH_BINARY )
 
-kernel3 = np.ones((9, 9), np.uint8)
-dilation3 = cv2.dilate(biner_threshold, kernel3, iterations=15)
-erotion3 = cv2.erode(dilation3, kernel3, iterations=15)
+    kernel3 = np.ones((9, 9), np.uint8)
+    dilation3 = cv2.dilate(biner_threshold, kernel3, iterations=15)
+    erotion3 = cv2.erode(dilation3, kernel3, iterations=15)
 
-biner_threshold = cv2.bitwise_not(erotion3)
-final = substract(img, biner_threshold)
-final1 = cv2.cvtColor(final, cv2.COLOR_BGR2GRAY)
+    biner_threshold = cv2.bitwise_not(erotion3)
+    final = substract(img, biner_threshold)
+    final1 = cv2.cvtColor(final, cv2.COLOR_BGR2GRAY)
 
-#inisialisasi diameter vertikal
-maks_y = 0
-min_y = 99999999999
+    #inisialisasi diameter vertikal
+    maks_y = 0
+    min_y = 99999999999
 
-#inisialisasi luas
-berat = 0
-full  = 0
+    #inisialisasi luas
+    berat = 0
+    full  = 0
 
-#inisialisasi rataan rgb
-red = 0
-blue = 0
-green = 0
+    #inisialisasi rataan rgb
+    red = 0
+    blue = 0
+    green = 0
 
-r_size = 0
-b_size = 0
-g_size = 0
-
-
-row, col = final1.shape
-for i in range(0, row):
-    for j in range(0, col):
-        #nilai dari citra yg telah di mask
-        val = final1[i,j]
-
-        #mendapatkan luas dari citra yang telah di mask
-        if(val!=0): berat = berat + 1
+    r_size = 0
+    b_size = 0
+    g_size = 0
 
 
-        #mendapatkan rataan rgb
-        b, g, r = final[i,j]
+    row, col = final1.shape
+    for i in range(0, row):
+        for j in range(0, col):
+            #nilai dari citra yg telah di mask
+            val = final1[i,j]
 
-        red = red + r
-        green = green + g
-        blue = blue + b
+            #mendapatkan luas dari citra yang telah di mask
+            if(val!=0): berat = berat + 1
 
-        if(r): r_size = r_size + 1
-        if(g): g_size = g_size + 1
-        if(b): b_size = b_size + 1
 
-        #mendapatkan diameter dari citra yang telah di edge detection
-        if (val!=0):
-                if(maks_y < j): maks_y = j
-                if(min_y > j): min_y = j
+            #mendapatkan rataan rgb
+            b, g, r = final[i,j]
 
-#mendapatkan nilai rataan rgb
-r_final = float(red)/r_size
-g_final = float(green)/g_size
-b_final = float(blue)/b_size
+            red = red + r
+            green = green + g
+            blue = blue + b
 
-#mendapatkan nilai diameter vertikal
-y = maks_y - min_y
+            if(r): r_size = r_size + 1
+            if(g): g_size = g_size + 1
+            if(b): b_size = b_size + 1
 
-#mendapatkan nilai luas
-full = row*col
-berat = float(berat)/full
+            #mendapatkan diameter dari citra yang telah di edge detection
+            if (val!=0):
+                    if(maks_y < j): maks_y = j
+                    if(min_y > j): min_y = j
 
-#print (r_final, g_final, b_final, berat, y)
-#data.append([r_final, g_final, b_final, hijau_final, hitam_final, berat])
+    #mendapatkan nilai rataan rgb
+    r_final = float(red)/r_size
+    g_final = float(green)/g_size
+    b_final = float(blue)/b_size
 
-#myFile = open('lagi4.csv','w')
-#with myFile:
-#	writer = csv.writer(myFile)
-#	writer.writerows(data)
+    #mendapatkan nilai diameter vertikal
+    y = maks_y - min_y
+
+    #mendapatkan nilai luas
+    full = row*col
+    berat = float(berat)/full
+
+    return y,r_final,g_final,b_final,berat
+
+    
