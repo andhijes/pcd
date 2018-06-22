@@ -9,6 +9,7 @@ import csv
 
 # from pcd import *
 
+
 def grayscale(source):
     row, col, ch = source.shape
     graykanvas = np.zeros((row, col, 1), np.uint8)
@@ -49,9 +50,8 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-@app.route('/', methods=['GET', 'POST'])
-def upload_file():
+@app.route('/kematangan',  methods=['GET', 'POST'])
+def utama():
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -69,12 +69,13 @@ def upload_file():
             file.save(lokasi_file)
             # utama(filename)
 
+            filenamee = filename
             count = 1
             data = []
             
             img = cv2.imread(lokasi_file)
-            fix = tuple((300,300))
-            img = cv2.resize(img, fix)
+            # fix = tuple((300,300))
+            # img = cv2.resize(img, fix)
             
             hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             gray = cv2.cvtColor(hsv, cv2.COLOR_RGB2GRAY)
@@ -142,14 +143,95 @@ def upload_file():
             
             link=UPLOAD_FOLDER+filename
             # return render_template('index.html')
-            return render_template('index.html',filename=filename,value=r_final,value2=g_final,value3=b_final,value4=hijau_final,value5=hitam_final, value6=berat, file_url=link)
-#    r_final, g_final, b_final, hijau_final, hitam_final, berat
+            # return render_template('index.html',filename=filename,value=r_final,value2=g_final,value3=b_final,value4=hijau_final,value5=hitam_final, value6=berat, file_url=link)
+            #    r_final, g_final, b_final, hijau_final, hitam_final, berat
+            import pandas as pd
+            mangga = pd.read_csv('mangga.csv', delimiter=',')
+
+            """# Classification
+
+            ## **Exploration Data**
+            """
+
+            #print(mangga.head())
+
+            #print(mangga.describe().transpose())
+
+            #print(mangga.shape)
+
+            """## Train Test Split"""
+
+            Xclass = mangga[['r_avg', 'g_avg', 'b_avg']]
+            yclass = mangga['Kematangan']
+            from sklearn.model_selection import train_test_split
+            X_train, X_test, y_train, y_test = train_test_split(Xclass, yclass)
+
+
+            """## Preprocessing"""
+
+            from sklearn.preprocessing import StandardScaler
+            scaler = StandardScaler()
+            scaler.fit(X_train)
+            StandardScaler(copy=True, with_mean=True, with_std=True)
+            X_train = scaler.transform(X_train)
+            X_test = scaler.transform(X_test)
+
+            """## Training Model"""
+
+            from sklearn.neural_network import MLPClassifier
+            mlp = MLPClassifier(hidden_layer_sizes=(5,5,5),max_iter=500, activation='logistic', alpha =0.0001, solver='lbfgs', learning_rate='constant',
+                      learning_rate_init=0.001)
+            mlp.fit(X_train,y_train)
+
+
+
+
+
+
+
+            """## Buat ngetest klasifikasi"""
+            #load model yang udah di save
+            mlp = pickle.load(open('finalized_model.sav', 'rb'))
+            #misal barisnya [[r_avg, g_avg, b_avg]]
+            # testbaris = [[45.42237509758,46.6865241998439,13.7977100274688,0.966212919594067,0.0337870804059329]]
+            testbaris = [[r_final, g_final, b_final]]
+            #di praproses
+            testbaris = scaler.transform(testbaris)
+            #diprediksi
+            predictions = mlp.predict(testbaris)
+            
+            if predictions == '[1]':
+                matang = 'Kurang Matang'
+            if predictions == '[2]':
+                matang = 'Matang'
+            else :
+                matang = 'Sangat Matang'
+
+
+            """## Buat ngetest regresi"""
+
+            # misal input
+            luas = 0.1
+            y = 1
+            # model
+            berat = -41.9630 + 3247.8645 * luas - 0.0693 * y
+            #truncate floating
+            berat = '%.3f'%(berat)             
+            return render_template('hasil.html',filename=filenamee,tingkat_matang=matang,berat=berat, file_url=link)
+    
+    return render_template('kematangan.html')
+
+
+
+
+@app.route('/images/<filename>', methods=['GET'])
+def show_file(filename):
+    return send_from_directory('images/', filename, as_attachment=True)
+
+@app.route('/')
+def index():   
     return render_template('index.html',)
 
-
-# @app.route('/ambil/<filename>', methods=['GET', 'POST'])
-# def show_file(filename):
-#     return send_from_directory('temp/', filename,as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)

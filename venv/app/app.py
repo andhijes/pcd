@@ -74,8 +74,8 @@ def utama():
             data = []
             
             img = cv2.imread(lokasi_file)
-            # fix = tuple((300,300))
-            # img = cv2.resize(img, fix)
+            fix = tuple((300,300))
+            img = cv2.resize(img, fix)
             
             hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             gray = cv2.cvtColor(hsv, cv2.COLOR_RGB2GRAY)
@@ -93,11 +93,15 @@ def utama():
             final = substract(img, biner_threshold)
             final1 = cv2.cvtColor(final, cv2.COLOR_BGR2GRAY)
 
-            hitam = 0
-            hijau = 0
+            #inisialisasi diameter vertikal
+            maks_y = 0
+            min_y = 99999999999
+
+            #inisialisasi luas
             berat = 0
             full  = 0
 
+            #inisialisasi rataan rgb
             red = 0
             blue = 0
             green = 0
@@ -110,15 +114,15 @@ def utama():
             row, col = final1.shape
             for i in range(0, row):
                 for j in range(0, col):
+                    #nilai dari citra yg telah di mask
                     val = final1[i,j]
-                    b, g, r = final[i,j]
-                    #print(b,g,r)
 
-                    #if(g!=0 and r!=0):
-                    if (val!=0):
-                        #if(b>20): hijau = hijau + 1
-                        if(val>15 and val < 65): hijau=hijau+1
-                        else: hitam = hitam+1
+                    #mendapatkan luas dari citra yang telah di mask
+                    if(val!=0): berat = berat + 1
+
+
+                    #mendapatkan rataan rgb
+                    b, g, r = final[i,j]
 
                     red = red + r
                     green = green + g
@@ -128,48 +132,40 @@ def utama():
                     if(g): g_size = g_size + 1
                     if(b): b_size = b_size + 1
 
-            hijau_final = float(hijau)/(hitam+hijau)
-            hitam_final = float(hitam)/(hitam+hijau)
+                    #mendapatkan diameter dari citra yang telah di edge detection
+                    if (val!=0):
+                            if(maks_y < j): maks_y = j
+                            if(min_y > j): min_y = j
+
+            #mendapatkan nilai rataan rgb
             r_final = float(red)/r_size
             g_final = float(green)/g_size
             b_final = float(blue)/b_size
 
+            
 
-            berat = hitam+hijau
+           #mendapatkan nilai diameter vertikal
+            y = maks_y - min_y
+
+            #mendapatkan nilai luas
             full = row*col
             berat = float(berat)/full
-
-            # return r_final, g_final, b_final, hijau_final, hitam_final, berat
             
             link=UPLOAD_FOLDER+filename
-            # return render_template('index.html')
-            # return render_template('index.html',filename=filename,value=r_final,value2=g_final,value3=b_final,value4=hijau_final,value5=hitam_final, value6=berat, file_url=link)
-            #    r_final, g_final, b_final, hijau_final, hitam_final, berat
+            
            
-            #kodingan sisdas
+            #KODINGAN SISDAS
             import pandas as pd
-            mangga = pd.read_csv('mangga.csv', delimiter=';')
+            mangga = pd.read_csv('mangga.csv', delimiter=',')
 
-            """# Classification
-
-            ## **Exploration Data**
-            """
-
-            #print(mangga.head())
-
-            #print(mangga.describe().transpose())
-
-            #print(mangga.shape)
 
             """## Train Test Split"""
 
-            Xclass = mangga.drop('Kematangan',axis=1)
-            Xclass = Xclass.drop('luas',axis=1)
-            Xclass = Xclass.drop('Berat',axis=1)
+            Xclass = mangga[['r_avg', 'g_avg', 'b_avg']]
             yclass = mangga['Kematangan']
             from sklearn.model_selection import train_test_split
             X_train, X_test, y_train, y_test = train_test_split(Xclass, yclass)
-            print()
+
 
             """## Preprocessing"""
 
@@ -183,34 +179,31 @@ def utama():
             """## Training Model"""
 
             from sklearn.neural_network import MLPClassifier
-            mlp = MLPClassifier(hidden_layer_sizes=(5,5,),max_iter=500)
+            mlp = MLPClassifier(hidden_layer_sizes=(5,5,5),max_iter=500, activation='logistic', alpha =0.0001, solver='lbfgs', learning_rate='constant',
+                                learning_rate_init=0.001)
             mlp.fit(X_train,y_train)
 
             """## Save Model"""
             import pickle
             # save the model to disk
-            # filename = 'finalized_model.sav'
-            # pickle.dump(mlp, open(filename, 'wb'))
+            filename = 'model_baru.sav'
+            pickle.dump(mlp, open(filename, 'wb'))
 
-
-            """## Prediction"""
-            predictions = mlp.predict(X_test)
-            from sklearn.metrics import classification_report,confusion_matrix
-            #print(confusion_matrix(y_test,predictions))
-            #print(classification_report(y_test,predictions))
 
             """## Buat ngetest klasifikasi"""
             #load model yang udah di save
-            mlp = pickle.load(open('finalized_model.sav', 'rb'))
-            #misal barisnya [[r_avg, g_avg, b_avg, hijau, hitam]]
-            #testbaris = [[45.42237509758,46.6865241998439,13.7977100274688,0.966212919594067,0.0337870804059329]]
-            testbaris = [[r_final, g_final, b_final, hijau_final, hitam_final]]
+            import pickle
+            mlp = pickle.load(open('model_baru.sav', 'rb'))
+            #misal barisnya [[r_avg, g_avg, b_avg]]
+            testbaris = [[45.42237509758,46.6865241998439,13.7977100274688]]
             #di praproses
             testbaris = scaler.transform(testbaris)
             #diprediksi
-            predictions = mlp.predict(testbaris)       
-
+            predictions = mlp.predict(testbaris)
+            print("hasil kelas: ")
+            #hasil prediksi
             print(predictions)
+
             matang = predictions 
             if matang == [1]:
                 matang = 'Kurang Matang'
@@ -222,11 +215,27 @@ def utama():
 
             """## Buat ngetest regresi"""
             #misal input
-            luas = berat
+            # luas = 0.1
+            # y = 1
             #model
-            berat = -54.6064 + 3184.4924*luas
+            luas = berat
+            berat = -41.9630 + 3247.8645*luas - 0.0693*y
+            #hasil berat
+            print('hasil berat: ' )
+            print(berat)
+            
+            
+
+
+            """## Buat ngetest regresi"""
+
+            # # misal input
+            # luas = 0.1
+            # y = 1
+            # # model
+            # berat = -41.9630 + 3247.8645 * luas - 0.0693 * y
             #truncate floating
-            berat = '%.3f'%(berat)             
+            berat = '%.3f'%(berat)        
             return render_template('hasil.html',filename=filenamee,tingkat_matang=matang,berat=berat, file_url=link)
     
     return render_template('kematangan.html')
